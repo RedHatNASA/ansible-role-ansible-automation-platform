@@ -30,8 +30,13 @@
     name: ansible-tower-dependencies
     description: Ansible Tower Dependencies Repository - $releasever $basearch
     file: ansible-tower-dependencies
-    baseurl: "https://releases.ansible.com/ansible-tower/rpm/dependencies/{{ tower_dir.stdout.split('-').3[:3] }}/epel-$releasever-$basearch"
+    baseurl: "https://releases.ansible.com/ansible-tower/rpm/dependencies/{{ tower_dir.stdout.split('-').3[:3] }}/epel-{{ ansible_distribution_major_version }}-$basearch"
     gpgcheck: no
+
+- name: Install Ansible
+  yum:
+    name: ansible
+    state: latest
 
 - name: Set tower admin user password
   lineinfile:
@@ -46,10 +51,18 @@
     line: pg_password='{{ pg_password }}'
 
 - name: Execute the setup.sh file
-  command: '{{ tower_dir.stdout }}/setup.sh'
+  raw: '{{ tower_dir.stdout }}/setup.sh'
 
 - name: Remove ansible-tower-dependencies repository
   yum_repository:
     name: ansible-tower-dependencies
     file: ansible-tower-dependencies
     state: absent
+
+- name: Remove artifacts
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /tmp/ansible-tower-setup-latest.tar.gz
+    - "{{ tower_dir.stdout }}"
